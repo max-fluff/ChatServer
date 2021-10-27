@@ -10,8 +10,8 @@ namespace ChatServer
         {
             var epochTicks = new TimeSpan(new DateTime(1970, 1, 1).Ticks);
             var unixTicks = new TimeSpan(DateTime.UtcNow.Ticks) - epochTicks;
-            var unixTime = MathF.Floor((float) unixTicks.TotalSeconds);
-            
+            var unixTime = (int) MathF.Floor((float) unixTicks.TotalSeconds);
+
             await Clients.All.SendAsync("Send", name, message, unixTime);
         }
     }
