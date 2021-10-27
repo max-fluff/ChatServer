@@ -12,6 +12,7 @@ namespace ChatServer
  
         public void Configure(IApplicationBuilder app)
         {
+            app.UseHttpsRedirection();
             app.UseDeveloperExceptionPage();
  
             app.UseDefaultFiles();
@@ -21,7 +22,7 @@ namespace ChatServer
  
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapHub<ChatHub>("/chat");
+                endpoints.MapHub<ChatHub>("/webchat");
             });
         }
     }
