@@ -1,4 +1,7 @@
-﻿using System;
+﻿#nullable enable
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
 
@@ -6,6 +9,9 @@ namespace ChatServer
 {
     public class ChatHub : Hub
     {
+        private readonly Dictionary<string, List<string>> _roomToIds = new Dictionary<string, List<string>>();
+        private readonly Dictionary<string, string> _idToRoomName = new Dictionary<string, string>();
+
         public async Task Send(string groupName, string name, string message)
         {
             var epochTicks = new TimeSpan(new DateTime(1970, 1, 1).Ticks);
@@ -18,20 +24,58 @@ namespace ChatServer
         public async Task RequestNewRoom()
         {
             var groupName = Guid.NewGuid().ToString();
-            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+            _roomToIds.Add(groupName, new List<string>());
+            await ConnectToRoom(Context.ConnectionId, groupName);
             await Clients.Caller.SendAsync("OnRoomConnect", groupName);
         }
 
         public async Task JoinRoom(string groupName)
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+            if (_roomToIds.ContainsKey(groupName))
+            {
+                await ConnectToRoom(Context.ConnectionId, groupName);
+                await Clients.Caller.SendAsync("OnRoomConnect", groupName);
+            }
+            else
+                await Clients.Caller.SendAsync("RoomDoesNotExist");
+        }
+
+        public async Task JoinRandomRoom()
+        {
+            var randomGroupNumber = new Random().Next() / _roomToIds.Count;
+            var groupName = _roomToIds.Keys.ToArray()[randomGroupNumber];
+
+            await ConnectToRoom(Context.ConnectionId, groupName);
             await Clients.Caller.SendAsync("OnRoomConnect", groupName);
+        }
+
+        private async Task ConnectToRoom(string contextId, string groupName)
+        {
+            await Groups.AddToGroupAsync(contextId, groupName);
+            _roomToIds[groupName].Add(contextId);
+            _idToRoomName.Add(contextId, groupName);
         }
 
         public async Task LeaveRoom(string groupName)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
             await Clients.Caller.SendAsync("OnLeaveRoom", groupName);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
+            OnLeftRoom(groupName);
+        }
+
+        public override Task OnDisconnectedAsync(Exception? exception)
+        {
+            var groupName = _idToRoomName[Context.ConnectionId];
+            OnLeftRoom(groupName);
+            return base.OnDisconnectedAsync(exception);
+        }
+
+        private void OnLeftRoom(string groupName)
+        {
+            _roomToIds[groupName].Remove(Context.ConnectionId);
+            _idToRoomName.Remove(Context.ConnectionId);
+            if (_roomToIds[groupName].Count < 1)
+                _roomToIds.Remove(groupName);
         }
     }
 }
