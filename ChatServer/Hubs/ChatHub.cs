@@ -9,8 +9,8 @@ namespace ChatServer
 {
     public class ChatHub : Hub
     {
-        private readonly Dictionary<string, List<string>> _roomToIds = new Dictionary<string, List<string>>();
-        private readonly Dictionary<string, string> _idToRoomName = new Dictionary<string, string>();
+        private static readonly Dictionary<string, List<string>> _roomToIds = new Dictionary<string, List<string>>();
+        private static readonly Dictionary<string, string> _idToRoomName = new Dictionary<string, string>();
 
         public async Task SendMessage(string groupName, string name, string message)
         {
@@ -71,6 +71,8 @@ namespace ChatServer
 
         public override Task OnDisconnectedAsync(Exception? exception)
         {
+            if (!_idToRoomName.ContainsKey(Context.ConnectionId))
+                return base.OnDisconnectedAsync(exception);
             var groupName = _idToRoomName[Context.ConnectionId];
             OnLeftRoom(groupName);
             return base.OnDisconnectedAsync(exception);
