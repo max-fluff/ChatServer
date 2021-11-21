@@ -42,6 +42,12 @@ namespace ChatServer
 
         public async Task JoinRandomRoom()
         {
+            if (_roomToIds.Count == 0)
+            {
+                await Clients.Caller.SendAsync("OnRoomConnectionFail");
+                return;
+            }
+            
             var randomGroupNumber = new Random().Next() % _roomToIds.Count;
             var groupName = _roomToIds.Keys.ToArray()[randomGroupNumber];
 
