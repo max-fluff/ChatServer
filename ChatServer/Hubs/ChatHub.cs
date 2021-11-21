@@ -42,7 +42,7 @@ namespace ChatServer
 
         public async Task JoinRandomRoom()
         {
-            var randomGroupNumber = new Random().Next() / _roomToIds.Count;
+            var randomGroupNumber = new Random().Next() % _roomToIds.Count;
             var groupName = _roomToIds.Keys.ToArray()[randomGroupNumber];
 
             await ConnectToRoom(Context.ConnectionId, groupName);
