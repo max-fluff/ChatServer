@@ -37,7 +37,7 @@ namespace ChatServer
                 await Clients.Caller.SendAsync("OnRoomConnect", groupName);
             }
             else
-                await Clients.Caller.SendAsync("RoomDoesNotExist");
+                await Clients.Caller.SendAsync("OnRoomConnectionFail");
         }
 
         public async Task JoinRandomRoom()
