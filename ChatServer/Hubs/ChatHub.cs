@@ -12,13 +12,13 @@ namespace ChatServer
         private readonly Dictionary<string, List<string>> _roomToIds = new Dictionary<string, List<string>>();
         private readonly Dictionary<string, string> _idToRoomName = new Dictionary<string, string>();
 
-        public async Task Send(string groupName, string name, string message)
+        public async Task SendMessage(string groupName, string name, string message)
         {
             var epochTicks = new TimeSpan(new DateTime(1970, 1, 1).Ticks);
             var unixTicks = new TimeSpan(DateTime.UtcNow.Ticks) - epochTicks;
             var unixTime = (int) MathF.Floor((float) unixTicks.TotalSeconds);
 
-            await Clients.Group(groupName).SendAsync("Send", name, message, unixTime);
+            await Clients.Group(groupName).SendAsync("OnMessageReceived", name, message, unixTime);
         }
 
         public async Task RequestNewRoom()
