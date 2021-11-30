@@ -28,16 +28,12 @@ namespace ChatServer
             RoomToIds.Add(groupName, new List<string>());
             if (isOpen) OpenRooms.Add(groupName);
             await ConnectToRoom(Context.ConnectionId, groupName);
-            await Clients.Caller.SendAsync("OnRoomConnect", groupName);
         }
 
         public async Task JoinRoom(string groupName)
         {
             if (RoomToIds.ContainsKey(groupName))
-            {
                 await ConnectToRoom(Context.ConnectionId, groupName);
-                await Clients.Caller.SendAsync("OnRoomConnect", groupName);
-            }
             else
                 await Clients.Caller.SendAsync("OnRoomConnectionFail");
         }
@@ -54,7 +50,6 @@ namespace ChatServer
             var groupName = OpenRooms.ToArray()[randomGroupNumber];
 
             await ConnectToRoom(Context.ConnectionId, groupName);
-            await Clients.Caller.SendAsync("OnRoomConnect", groupName);
         }
 
         private async Task ConnectToRoom(string contextId, string groupName)
@@ -62,6 +57,9 @@ namespace ChatServer
             await Groups.AddToGroupAsync(contextId, groupName);
             RoomToIds[groupName].Add(contextId);
             IdToRoomName.Add(contextId, groupName);
+            var isGroupOpen = OpenRooms.Contains(groupName);
+            
+            await Clients.Caller.SendAsync("OnRoomConnect", groupName, isGroupOpen);
         }
 
         public async Task LeaveRoom(string groupName)
