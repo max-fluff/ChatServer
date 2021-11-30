@@ -24,7 +24,7 @@ namespace ChatServer
 
         public async Task RequestNewRoom(bool isOpen)
         {
-            var groupName = GenerateId();
+            var groupName = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Remove(21);
             RoomToIds.Add(groupName, new List<string>());
             if (isOpen) OpenRooms.Add(groupName);
             await ConnectToRoom(Context.ConnectionId, groupName, isOpen);
@@ -88,29 +88,6 @@ namespace ChatServer
             if (RoomToIds[groupName].Count >= 1) return;
             RoomToIds.Remove(groupName);
             OpenRooms.Remove(groupName);
-        }
-
-        private static string GenerateId()
-        {
-            var utcNow = DateTime.UtcNow;
-            var utcStart = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-            var ticks = (long) utcNow.Subtract(utcStart).TotalMilliseconds;
-            char[] baseChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".ToCharArray();
-
-            var i = 32;
-            char[] buffer = new char[i];
-            var targetBase = baseChars.Length;
-
-            do
-            {
-                buffer[--i] = baseChars[ticks % targetBase];
-                ticks /= targetBase;
-            } while (ticks > 0);
-
-            char[] result = new char[32 - i];
-            Array.Copy(buffer, i, result, 0, 32 - i);
-
-            return new string(result);
         }
     }
 }
