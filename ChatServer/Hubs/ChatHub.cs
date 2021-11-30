@@ -11,6 +11,7 @@ namespace ChatServer
     {
         private static readonly Dictionary<string, List<string>> RoomToIds = new Dictionary<string, List<string>>();
         private static readonly Dictionary<string, string> IdToRoomName = new Dictionary<string, string>();
+        private static readonly List<string> OpenRooms = new List<string>();
 
         public async Task SendMessage(string groupName, string name, string message)
         {
@@ -21,10 +22,11 @@ namespace ChatServer
             await Clients.Group(groupName).SendAsync("OnMessageReceived", name, message, unixTime);
         }
 
-        public async Task RequestNewRoom()
+        public async Task RequestNewRoom(bool isOpen)
         {
             var groupName = Guid.NewGuid().ToString();
             RoomToIds.Add(groupName, new List<string>());
+            if (isOpen) OpenRooms.Add(groupName);
             await ConnectToRoom(Context.ConnectionId, groupName);
             await Clients.Caller.SendAsync("OnRoomConnect", groupName);
         }
@@ -42,14 +44,14 @@ namespace ChatServer
 
         public async Task JoinRandomRoom()
         {
-            if (RoomToIds.Count == 0)
+            if (OpenRooms.Count == 0)
             {
                 await Clients.Caller.SendAsync("OnRoomConnectionFail");
                 return;
             }
-            
-            var randomGroupNumber = new Random().Next() % RoomToIds.Count;
-            var groupName = RoomToIds.Keys.ToArray()[randomGroupNumber];
+
+            var randomGroupNumber = new Random().Next() % OpenRooms.Count;
+            var groupName = OpenRooms.ToArray()[randomGroupNumber];
 
             await ConnectToRoom(Context.ConnectionId, groupName);
             await Clients.Caller.SendAsync("OnRoomConnect", groupName);
@@ -82,8 +84,10 @@ namespace ChatServer
         {
             RoomToIds[groupName].Remove(Context.ConnectionId);
             IdToRoomName.Remove(Context.ConnectionId);
-            if (RoomToIds[groupName].Count < 1)
-                RoomToIds.Remove(groupName);
+            
+            if (RoomToIds[groupName].Count >= 1) return;
+            RoomToIds.Remove(groupName);
+            OpenRooms.Remove(groupName);
         }
     }
 }
